@@ -21,6 +21,7 @@ use InvalidArgumentException;
 use PHPMD\Baseline\BaselineMode;
 use PHPMD\Cache\Model\ResultCacheStrategy;
 use PHPMD\Console\OutputInterface;
+use PHPMD\InternalRuleSet;
 use PHPMD\Renderer\AnsiRenderer;
 use PHPMD\Renderer\CheckStyleRenderer;
 use PHPMD\Renderer\GitHubRenderer;
@@ -382,7 +383,7 @@ class CommandLineOptions
         $validator = new ArgumentsValidator($hasImplicitArguments, $originalArguments, $arguments);
 
         $ruleSets = (string)array_pop($arguments);
-        $this->ruleSets = $ruleSets === 'all' ? 'codesize,unusedcode,naming,design,controversial' : $ruleSets;
+        $this->ruleSets = $ruleSets === 'all' ? InternalRuleSet::getNamesConcatenated() : $ruleSets;
         $validator->validate('ruleset', $this->ruleSets);
 
         $this->reportFormat = (string)array_pop($arguments);

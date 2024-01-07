@@ -124,9 +124,8 @@ class RuleSetFactory
      * Creates a single rule-set instance for the given filename or identifier.
      *
      * @param string $ruleSetOrFileName The rule-set filename or identifier.
-     * @return \PHPMD\RuleSet
      */
-    public function createSingleRuleSet($ruleSetOrFileName)
+    public function createSingleRuleSet(string $ruleSetOrFileName): RuleSet
     {
         $fileName = $this->createRuleSetFileName($ruleSetOrFileName);
 
@@ -138,7 +137,7 @@ class RuleSetFactory
      *
      * @return string[]
      */
-    public function listAvailableRuleSets()
+    public function listAvailableRuleSets(): array
     {
         return array_merge(
             self::listRuleSetsInDirectory($this->location . '/rulesets/'),
@@ -193,8 +192,8 @@ class RuleSetFactory
      */
     private function parseRuleSetNode(string $fileName): RuleSet
     {
-        $format = preg_match('/\.(?<format>php|yaml)(?:\.dist)?$/', $fileName, $match)
-            ? $match['format']
+        $format = preg_match('/\.(?<format>php|yaml)(?:\.dist)?$/i', $fileName, $match)
+            ? strtolower($match['format'])
             : 'xml';
 
         return match ($format) {
@@ -302,10 +301,12 @@ class RuleSetFactory
         $ruleSetFolderPath = dirname($ruleSet->getFileName());
 
         if (isset($ruleNode['file'])) {
-            if (is_readable((string)$ruleNode['file'])) {
-                $fileName = (string)$ruleNode['file'];
-            } elseif (is_readable($ruleSetFolderPath . DIRECTORY_SEPARATOR . (string)$ruleNode['file'])) {
-                $fileName = $ruleSetFolderPath . DIRECTORY_SEPARATOR . (string)$ruleNode['file'];
+            $ruleNodeFile = (string)$ruleNode['file'];
+
+            if (is_readable($ruleNodeFile)) {
+                $fileName = $ruleNodeFile;
+            } elseif (is_readable($ruleSetFolderPath . DIRECTORY_SEPARATOR . $ruleNodeFile)) {
+                $fileName = $ruleSetFolderPath . DIRECTORY_SEPARATOR . $ruleNodeFile;
             }
         }
 
@@ -353,32 +354,29 @@ class RuleSetFactory
     }
 
     /**
-     * This method parses a single rule that was included from a different
-     * rule-set.
+     * This method parses a single rule that was included from a different rule-set.
      */
-    private function parseRuleReferenceNode(RuleSet $ruleSet, \SimpleXMLElement|\ArrayAccess|array $ruleNode)
+    private function parseRuleReferenceNode(RuleSet $ruleSet, \SimpleXMLElement|\ArrayAccess|array $ruleNode): void
     {
         $ref = (string)$ruleNode['ref'];
 
-        ['file' => $fileName, 'rule' => $ruleName] = preg_match('`^(?<file>.*\.(?:xml|yaml|php))/(?<rule>.*)`i', $ref, $matches)
+        [
+            'file' => $fileName,
+            'rule' => $ruleName,
+        ] = preg_match('`^(?<file>.*\.(?:xml|yaml|php))/(?<rule>.*)`i', $ref, $matches)
             ? $matches
             : ['file' => '', 'rule' => $ref];
-        $fileName = $this->createRuleSetFileName($fileName);
 
-        $ruleSetFactory = new RuleSetFactory();
+        $ruleSetRef = $fileName === ''
+            ? $this->findFileForRule($ref)
+            : $this->createSingleRuleSet($this->createRuleSetFileName($fileName));
 
-        $ruleSetRef = $ruleSetFactory->createSingleRuleSet($fileName);
         $rule = $ruleSetRef->getRuleByName($ruleName) ?? throw new RuleNotFoundException($ruleName);
 
-        if (isset($ruleNode['name']) && trim($ruleNode['name']) !== '') {
-            $rule->setName((string)$ruleNode['name']);
-        }
-        if (isset($ruleNode['message']) && trim($ruleNode['message']) !== '') {
-            $rule->setMessage((string)$ruleNode['message']);
-        }
-        if (isset($ruleNode['externalInfoUrl']) && trim($ruleNode['externalInfoUrl']) !== '') {
-            $rule->setExternalInfoUrl((string)$ruleNode['externalInfoUrl']);
-        }
+        // When dropping PHP < 8.1, replace [$rule, 'setName'] with $rule->setName(...) syntax
+        $this->withNonEmptyStringAtKey($ruleNode, 'name', [$rule, 'setName']);
+        $this->withNonEmptyStringAtKey($ruleNode, 'message', [$rule, 'setMessage']);
+        $this->withNonEmptyStringAtKey($ruleNode, 'externalInfoUrl', [$rule, 'setExternalInfoUrl']);
 
         $this->parseRuleProperties($rule, $ruleNode);
 
@@ -387,15 +385,22 @@ class RuleSetFactory
         }
     }
 
+    private function withNonEmptyStringAtKey(
+        \SimpleXMLElement|\ArrayAccess|array $config,
+        string $key,
+        callable $setter,
+    ): void {
+        $value = trim((string)($config[$key] ?? ''));
+
+        if ($value !== '') {
+            $setter($value);
+        }
+    }
+
     private function parseRuleProperties(Rule $rule, \SimpleXMLElement|\ArrayAccess|array $ruleNode): void
     {
-        if (isset($ruleNode['description'])) {
-            $rule->setDescription((string)$ruleNode['description']);
-        }
-
-        if (isset($ruleNode['example'])) {
-            $rule->addExample((string)$ruleNode['example']);
-        }
+        $this->withNonEmptyStringAtKey($ruleNode, 'description', [$rule, 'setDescription']);
+        $this->withNonEmptyStringAtKey($ruleNode, 'example', [$rule, 'addExample']);
 
         if (isset($ruleNode['priority'])) {
             $rule->setPriority((int)$ruleNode['priority']);
@@ -550,7 +555,7 @@ class RuleSetFactory
      * Returns list of possible file paths to search against code rules
      *
      * @param string $fileName Rule set file name
-     * @return array Array of possible file locations
+     * @return string[] Array of possible file locations
      */
     private function filePaths(string $fileName): array
     {
@@ -640,7 +645,7 @@ class RuleSetFactory
         }
 
         foreach (((array)$config['rules'] ?? []) as $rule) {
-            $this->parseRuleFromConfig($ruleSet, $rule);
+            $this->parseRuleReferenceNode($ruleSet, $rule);
         }
     }
 
@@ -676,44 +681,18 @@ class RuleSetFactory
     }
 
     /**
-     * This method parses a single rule that was included from a different
-     * rule-set.
+     * Return the first file in the internal ruleset having a given rule name.
      */
-    private function parseRuleFromConfig(RuleSet $ruleSet, array $config): void
+    private function findFileForRule(string $rule): RuleSet
     {
-        $ref = (string)$config['ref'];
+        foreach (InternalRuleSet::getNames() as $setName) {
+            $ruleSet = $this->createSingleRuleSet($this->createRuleSetFileName($setName));
 
-        $fileName = substr($ref, 0, strpos($ref, '.xml/') + 4);
-        $fileName = $this->createRuleSetFileName($fileName);
-
-        $ruleName = substr($ref, strpos($ref, '.xml/') + 5);
-
-        $ruleSetFactory = new RuleSetFactory();
-
-        $ruleSetRef = $ruleSetFactory->createSingleRuleSet($fileName);
-        $rule = $ruleSetRef->getRuleByName($ruleName);
-        $name = trim((string)($config['name'] ?? ''));
-
-        if ($name !== '') {
-            $rule->setName($name);
+            if ($ruleSet->getRuleByName($rule)) {
+                return $ruleSet;
+            }
         }
 
-        $message = trim((string)($config['message'] ?? ''));
-
-        if ($message !== '') {
-            $rule->setMessage($message);
-        }
-
-        $externalInfoUrl = trim((string)($config['externalInfoUrl'] ?? ''));
-
-        if ($externalInfoUrl !== '') {
-            $rule->setExternalInfoUrl($externalInfoUrl);
-        }
-
-        $this->parseRuleProperties($rule, $config);
-
-        if ($rule->getPriority() <= $this->minimumPriority && $rule->getPriority() >= $this->maximumPriority) {
-            $ruleSet->addRule($rule);
-        }
+        throw new RuleNotFoundException($rule);
     }
 }
