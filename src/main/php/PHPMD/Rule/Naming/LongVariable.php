@@ -57,11 +57,8 @@ class LongVariable extends AbstractRule implements ClassAware, MethodAware, Func
      * Extracts all variable and variable declarator nodes from the given node
      * and checks the variable name length against the configured maximum
      * length.
-     *
-     * @param \PHPMD\AbstractNode $node
-     * @return void
      */
-    public function apply(AbstractNode $node)
+    public function apply(AbstractNode $node): void
     {
         $this->resetProcessed();
 

@@ -21,6 +21,7 @@ use PHPMD\Exception\RuleClassFileNotFoundException;
 use PHPMD\Exception\RuleClassNotFoundException;
 use PHPMD\Exception\RuleNotFoundException;
 use PHPMD\Exception\RuleSetNotFoundException;
+use PHPMD\RuleProperty\RulePropertySetter;
 use RuntimeException;
 use Symfony\Component\Yaml\Yaml;
 
@@ -447,6 +448,8 @@ class RuleSetFactory
                 $this->addProperty($rule, $node);
             }
         }
+
+        RulePropertySetter::setDefaultValues($rule);
     }
 
     /**

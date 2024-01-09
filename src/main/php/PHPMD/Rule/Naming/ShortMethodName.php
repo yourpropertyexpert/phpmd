@@ -31,11 +31,8 @@ class ShortMethodName extends AbstractRule implements MethodAware, FunctionAware
      * Extracts all method and function nodes from the given node
      * and checks the variable name length against the configured minimum
      * length.
-     *
-     * @param \PHPMD\AbstractNode $node
-     * @return void
      */
-    public function apply(AbstractNode $node)
+    public function apply(AbstractNode $node): void
     {
         $threshold = $this->getIntProperty('minimum');
         $name = (string)$node->getName();

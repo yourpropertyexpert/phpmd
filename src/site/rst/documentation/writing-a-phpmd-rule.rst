@@ -360,7 +360,7 @@ interfaces `\\PHPMD\\Rule\\FunctionAware`__ and `\\PHPMD\\Rule\\MethodAware`__.
 
   class GotoStatement extends AbstractRule implements MethodAware, FunctionAware
   {
-      public function apply(AbstractNode $node)
+      public function apply(AbstractNode $node): void
       {
           foreach ($node->findChildrenOfType('GotoStatement') as $goto) {
               $this->addViolation($goto, array($node->getType(), $node->getName()));
