@@ -22,20 +22,16 @@
  */
 class some_class_that_does_not_follow_psr0 extends \PHPMD\AbstractRule
 {
-
     /**
      * A method that returns foo, bar and baz.
-     *
-     * @return string
      */
-    public function getFooBarBaz()
+    public function getFooBarBaz(): array
     {
         return ['foo', 'bar', 'baz'];
     }
 
-    public function apply(\PHPMD\AbstractNode $node)
+    public function apply(\PHPMD\AbstractNode $node): void
     {
 
     }
-
 }
