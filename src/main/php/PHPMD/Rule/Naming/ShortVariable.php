@@ -37,6 +37,7 @@ class ShortVariable extends AbstractRule implements ClassAware, MethodAware, Fun
     #[Threshold(['threshold', 'minimum'])]
     public int $threshold;
 
+    /** @SuppressWarnings(LongVariable) */
     #[Option]
     public bool $allowShortVariablesInLoop = true;
 

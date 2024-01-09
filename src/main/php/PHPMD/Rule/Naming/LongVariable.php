@@ -64,23 +64,27 @@ class LongVariable extends AbstractRule implements ClassAware, MethodAware, Func
 
         if ($node->getType() === 'class') {
             $fields = $node->findChildrenOfType('FieldDeclaration');
+
             foreach ($fields as $field) {
-                $declarators = $field->findChildrenOfType('VariableDeclarator');
-                foreach ($declarators as $declarator) {
+                if ($field->hasSuppressWarningsAnnotationFor($this)) {
+                    continue;
+                }
+
+                foreach ($field->findChildrenOfType('VariableDeclarator') as $declarator) {
                     $this->checkNodeImage($declarator);
                 }
             }
+
             $this->resetProcessed();
 
             return;
         }
-        $declarators = $node->findChildrenOfType('VariableDeclarator');
-        foreach ($declarators as $declarator) {
+
+        foreach ($node->findChildrenOfType('VariableDeclarator') as $declarator) {
             $this->checkNodeImage($declarator);
         }
 
-        $variables = $node->findChildrenOfTypeVariable();
-        foreach ($variables as $variable) {
+        foreach ($node->findChildrenOfTypeVariable() as $variable) {
             $this->checkNodeImage($variable);
         }
 
@@ -111,19 +115,27 @@ class LongVariable extends AbstractRule implements ClassAware, MethodAware, Func
      */
     protected function checkMaximumLength(AbstractNode $node)
     {
+        if ($node->hasSuppressWarningsAnnotationFor($this)) {
+            return;
+        }
+
         $threshold = $this->getIntProperty('maximum');
         $variableName = $node->getImage();
+
         $lengthWithoutDollarSign = Strings::lengthWithoutPrefixesAndSuffixes(
             \ltrim($variableName, '$'),
             $this->getSubtractPrefixList(),
             $this->getSubtractSuffixList()
         );
+
         if ($lengthWithoutDollarSign <= $threshold) {
             return;
         }
+
         if ($this->isNameAllowedInContext($node)) {
             return;
         }
+
         $this->addViolation($node, [$variableName, $threshold]);
     }
 
