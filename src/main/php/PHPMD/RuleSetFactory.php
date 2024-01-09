@@ -256,12 +256,12 @@ class RuleSetFactory
      */
     private function isIncluded(Rule $rule, \SimpleXMLElement|\ArrayAccess|array $ruleSetNode): bool
     {
-        $excludes = (is_object($ruleSetNode) ? ($ruleSetNode->exclude ?? null) : null)
+        $excludes = (\is_object($ruleSetNode) ? ($ruleSetNode->exclude ?? null) : null)
             ?? $ruleSetNode['exclude']
             ?? [];
 
         foreach ($excludes as $exclude) {
-            $name = is_string($exclude) ? $exclude : (string)($exclude['name'] ?? '');
+            $name = \is_string($exclude) ? $exclude : (string)($exclude['name'] ?? '');
 
             if ($rule->getName() === $name) {
                 return false;

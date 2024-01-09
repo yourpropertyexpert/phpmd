@@ -54,7 +54,7 @@ final class Matcher implements RulePropertyType
         $value ??= [];
 
         if (!\is_string($value) && !\is_array($value)) {
-            $valueType = is_object($value) ? $value::class : gettype($value);
+            $valueType = \is_object($value) ? $value::class : \gettype($value);
 
             throw new InvalidRulePropertyTypeException(
                 $ruleClass,

@@ -103,7 +103,7 @@ final class RulePropertySetter
     {
         return match ($type) {
             'bool' => $value === true || $value === 1 || $value === 1.0 ||
-                (is_string($value) && in_array(strtolower($value), ['1', 'yes', 'on', 'true'], true)),
+                (\is_string($value) && \in_array(strtolower($value), ['1', 'yes', 'on', 'true'], true)),
             'int' => (int)$value,
             'float' => (float)$value,
             'string' => (string)$value,
@@ -153,7 +153,7 @@ final class RulePropertySetter
         );
 
         if (!is_a($value, $class)) {
-            $valueType = is_object($value) ? $value::class : gettype($value);
+            $valueType = \is_object($value) ? $value::class : \gettype($value);
 
             throw new InvalidRulePropertyTypeException(
                 $ruleClass,

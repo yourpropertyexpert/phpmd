@@ -150,7 +150,7 @@ class LongVariable extends AbstractRule implements ClassAware, MethodAware, Func
     protected function isChildOf(AbstractNode $node, $type)
     {
         $parent = $node->getParent();
-        while (is_object($parent)) {
+        while (\is_object($parent)) {
             if ($parent->isInstanceOf($type)) {
                 return true;
             }
