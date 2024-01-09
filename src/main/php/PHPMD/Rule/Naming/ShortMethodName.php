@@ -21,12 +21,21 @@ use PHPMD\AbstractNode;
 use PHPMD\AbstractRule;
 use PHPMD\Rule\FunctionAware;
 use PHPMD\Rule\MethodAware;
+use PHPMD\RuleProperty\Threshold;
+use PHPMD\RuleProperty\Matcher;
+use PHPMD\RuleProperty\MatchList;
 
 /**
  * This rule class will detect methods and functions with very short names.
  */
 class ShortMethodName extends AbstractRule implements MethodAware, FunctionAware
 {
+    #[Threshold(['threshold', 'minimum'])]
+    public int $threshold;
+
+    #[MatchList]
+    public Matcher $exceptions;
+
     /**
      * Extracts all method and function nodes from the given node
      * and checks the variable name length against the configured minimum
@@ -34,16 +43,9 @@ class ShortMethodName extends AbstractRule implements MethodAware, FunctionAware
      */
     public function apply(AbstractNode $node): void
     {
-        $threshold = $this->getIntProperty('minimum');
         $name = (string)$node->getName();
 
-        if (strlen($name) >= $threshold) {
-            return;
-        }
-
-        $exceptions = $this->getExceptionsList();
-
-        if (in_array($name, $exceptions, true)) {
+        if (\strlen($name) >= $this->threshold || $this->exceptions->contains($name)) {
             return;
         }
 
@@ -51,25 +53,9 @@ class ShortMethodName extends AbstractRule implements MethodAware, FunctionAware
             $node,
             [
                 $node->getParentName(),
-                $node->getName(),
-                $threshold,
-            ]
+                $name,
+                $this->threshold,
+            ],
         );
-    }
-
-    /**
-     * Gets array of exceptions from property
-     *
-     * @return array
-     */
-    protected function getExceptionsList()
-    {
-        try {
-            $exceptions = $this->getStringProperty('exceptions');
-        } catch (\OutOfBoundsException $e) {
-            $exceptions = '';
-        }
-
-        return explode(',', $exceptions);
     }
 }

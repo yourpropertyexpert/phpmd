@@ -249,6 +249,16 @@ class ShortVariableTest extends AbstractTestCase
         $rule->apply($this->getClass());
     }
 
+    public function testRuleNotAppliesToVariablesFromExceptionsPattern(): void
+    {
+        $rule = new ShortVariable();
+        $rule->addProperty('minimum', 3);
+        $rule->addProperty('exceptions', 'foo*');
+        $rule->setReport($this->getReportWithNoViolation());
+
+        $rule->apply($this->getClass());
+    }
+
     /**
      * @dataProvider provideClassWithShortForeachVariables
      */

@@ -23,6 +23,10 @@ use PHPMD\Rule\ClassAware;
 use PHPMD\Rule\FunctionAware;
 use PHPMD\Rule\MethodAware;
 use PHPMD\Rule\TraitAware;
+use PHPMD\RuleProperty\Option;
+use PHPMD\RuleProperty\Threshold;
+use PHPMD\RuleProperty\Matcher;
+use PHPMD\RuleProperty\MatchList;
 
 /**
  * This rule class will detect variables, parameters and properties with short
@@ -30,6 +34,15 @@ use PHPMD\Rule\TraitAware;
  */
 class ShortVariable extends AbstractRule implements ClassAware, MethodAware, FunctionAware, TraitAware
 {
+    #[Threshold(['threshold', 'minimum'])]
+    public int $threshold;
+
+    #[Option]
+    public bool $allowShortVariablesInLoop = true;
+
+    #[MatchList]
+    public Matcher $exceptions;
+
     /**
      * Temporary map holding variables that were already processed in the
      * current context.
@@ -112,9 +125,7 @@ class ShortVariable extends AbstractRule implements ClassAware, MethodAware, Fun
      */
     protected function checkMinimumLength(AbstractNode $node): void
     {
-        $threshold = $this->getIntProperty('minimum');
-
-        if ($threshold <= strlen($node->getImage()) - 1) {
+        if ($this->threshold <= \strlen($node->getImage()) - 1) {
             return;
         }
 
@@ -122,29 +133,11 @@ class ShortVariable extends AbstractRule implements ClassAware, MethodAware, Fun
             return;
         }
 
-        $exceptions = $this->getExceptionsList();
-
-        if (in_array(substr($node->getImage(), 1), $exceptions)) {
+        if ($this->exceptions->contains(substr($node->getImage(), 1))) {
             return;
         }
 
-        $this->addViolation($node, [$node->getImage(), $threshold]);
-    }
-
-    /**
-     * Gets array of exceptions from property
-     *
-     * @return array
-     */
-    protected function getExceptionsList()
-    {
-        try {
-            $exceptions = $this->getStringProperty('exceptions');
-        } catch (\OutOfBoundsException $e) {
-            $exceptions = '';
-        }
-
-        return explode(',', $exceptions);
+        $this->addViolation($node, [$node->getImage(), $this->threshold]);
     }
 
     /**
@@ -170,7 +163,7 @@ class ShortVariable extends AbstractRule implements ClassAware, MethodAware, Fun
      */
     protected function isInitializedInLoop(AbstractNode $node): bool
     {
-        if (!$this->getBooleanProperty('allow-short-variables-in-loop', true)) {
+        if (!$this->allowShortVariablesInLoop) {
             return false;
         }
 
@@ -197,7 +190,7 @@ class ShortVariable extends AbstractRule implements ClassAware, MethodAware, Fun
 
         $parent = $node->getParent();
 
-        while (is_object($parent)) {
+        while (\is_object($parent)) {
             if ($parent->isInstanceOf($type)) {
                 $parents[] = $parent;
             }
@@ -214,7 +207,7 @@ class ShortVariable extends AbstractRule implements ClassAware, MethodAware, Fun
     protected function isChildOf(AbstractNode $node, string $type): bool
     {
         $parent = $node->getParent();
-        while (is_object($parent)) {
+        while (\is_object($parent)) {
             if ($parent->isInstanceOf($type)) {
                 return true;
             }
