@@ -253,14 +253,10 @@ abstract class AbstractRule implements Rule
     }
 
     /**
-     * Add a new configuration property to this rule instance.
+     * Add a configuration property to this rule instance.
      */
     public function addProperty(string $name, mixed $value): void
     {
-        if (array_key_exists($name, $this->properties)) {
-            throw new RuntimeException("$name property is already set on the current " . static::class);
-        }
-
         RulePropertySetter::setValue($this, $name, $value);
 
         $this->properties[$name] = $value;
