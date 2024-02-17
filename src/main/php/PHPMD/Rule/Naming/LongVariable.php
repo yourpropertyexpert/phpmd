@@ -23,6 +23,7 @@ use PHPMD\Rule\ClassAware;
 use PHPMD\Rule\FunctionAware;
 use PHPMD\Rule\MethodAware;
 use PHPMD\Rule\TraitAware;
+use PHPMD\RuleProperty\Option;
 use PHPMD\Utility\Strings;
 
 /**
@@ -34,24 +35,26 @@ class LongVariable extends AbstractRule implements ClassAware, MethodAware, Func
     /**
      * Temporary cache of configured prefixes to subtract
      *
-     * @var string[]|null
+     * @var string[]
      */
-    protected $subtractPrefixes;
+    #[Option]
+    public array $subtractPrefixes;
 
     /**
      * Temporary cache of configured suffixes to subtract
      *
-     * @var string[]|null
+     * @var string[]
      */
-    protected $subtractSuffixes;
+    #[Option]
+    public array $subtractSuffixes;
 
     /**
      * Temporary map holding variables that were already processed in the
      * current context.
      *
-     * @var array(string=>boolean)
+     * @var array<string, bool>
      */
-    protected $processedVariables = [];
+    protected array $processedVariables = [];
 
     /**
      * Extracts all variable and variable declarator nodes from the given node
@@ -109,11 +112,9 @@ class LongVariable extends AbstractRule implements ClassAware, MethodAware, Func
     /**
      * Template method that performs the real node image check.
      *
-     * @param \PHPMD\AbstractNode $node
-     * @return void
      * @SuppressWarnings(PHPMD.LongVariable)
      */
-    protected function checkMaximumLength(AbstractNode $node)
+    protected function checkMaximumLength(AbstractNode $node): void
     {
         if ($node->hasSuppressWarningsAnnotationFor($this)) {
             return;
@@ -142,11 +143,8 @@ class LongVariable extends AbstractRule implements ClassAware, MethodAware, Func
     /**
      * Checks if a short name is acceptable in the current context. For the
      * moment the only context is a static member.
-     *
-     * @param \PHPMD\AbstractNode $node
-     * @return boolean
      */
-    protected function isNameAllowedInContext(AbstractNode $node)
+    protected function isNameAllowedInContext(AbstractNode $node): bool
     {
         return $this->isChildOf($node, 'MemberPrimaryPrefix');
     }
@@ -154,12 +152,8 @@ class LongVariable extends AbstractRule implements ClassAware, MethodAware, Func
     /**
      * Checks if the given node is a direct or indirect child of a node with
      * the given type.
-     *
-     * @param \PHPMD\AbstractNode $node
-     * @param string $type
-     * @return boolean
      */
-    protected function isChildOf(AbstractNode $node, $type)
+    protected function isChildOf(AbstractNode $node, string $type): bool
     {
         $parent = $node->getParent();
         while (\is_object($parent)) {
@@ -174,32 +168,24 @@ class LongVariable extends AbstractRule implements ClassAware, MethodAware, Func
 
     /**
      * Resets the already processed nodes.
-     *
-     * @return void
      */
-    protected function resetProcessed()
+    protected function resetProcessed(): void
     {
         $this->processedVariables = [];
     }
 
     /**
      * Flags the given node as already processed.
-     *
-     * @param \PHPMD\AbstractNode $node
-     * @return void
      */
-    protected function addProcessed(AbstractNode $node)
+    protected function addProcessed(AbstractNode $node): void
     {
         $this->processedVariables[$node->getImage()] = true;
     }
 
     /**
      * Checks if the given node was already processed.
-     *
-     * @param \PHPMD\AbstractNode $node
-     * @return boolean
      */
-    protected function isNotProcessed(AbstractNode $node)
+    protected function isNotProcessed(AbstractNode $node): bool
     {
         return !isset($this->processedVariables[$node->getImage()]);
     }
@@ -209,11 +195,9 @@ class LongVariable extends AbstractRule implements ClassAware, MethodAware, Func
      *
      * @return string[]
      */
-    protected function getSubtractPrefixList()
+    protected function getSubtractPrefixList(): array
     {
-        if ($this->subtractPrefixes === null) {
-            $this->subtractPrefixes = Strings::splitToList($this->getStringProperty('subtract-prefixes', ''), ',');
-        }
+        $this->subtractPrefixes ??= Strings::splitToList($this->getStringProperty('subtract-prefixes', ''), ',');
 
         return $this->subtractPrefixes;
     }
@@ -223,11 +207,9 @@ class LongVariable extends AbstractRule implements ClassAware, MethodAware, Func
      *
      * @return string[]
      */
-    protected function getSubtractSuffixList()
+    protected function getSubtractSuffixList(): array
     {
-        if ($this->subtractSuffixes === null) {
-            $this->subtractSuffixes = Strings::splitToList($this->getStringProperty('subtract-suffixes', ''), ',');
-        }
+        $this->subtractSuffixes ??= Strings::splitToList($this->getStringProperty('subtract-suffixes', ''), ',');
 
         return $this->subtractSuffixes;
     }
